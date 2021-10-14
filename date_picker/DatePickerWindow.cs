@@ -18,6 +18,8 @@ namespace com.samwalz.unity_ui.date_picker
         private RectTransform _transform;
         private DatePickerButton _input;
 
+        private bool _ignoreChanges;
+
         private DateTime _dateTime;
         
         private bool _initialised;
@@ -54,19 +56,24 @@ namespace com.samwalz.unity_ui.date_picker
                 );
         }
 
-        public void OnYearEndEdit(string value)
+        private void OnYearEndEdit(string value)
         {
+            if (_ignoreChanges) return;
             if (int.TryParse(value, out var year))
             {
+                if (Year == year) return;
                 Year = year;
             }
-            inputYear.text = _dateTime.Year.ToString("0000");
-            _input.DateTime = _dateTime;
+            UpdateInputs();
         }
-        public void OnMonthEndEdit(int value)
+
+        private void OnMonthEndEdit(int value)
         {
-            Month = value + 1;
-            _input.DateTime = _dateTime;
+            if (_ignoreChanges) return;
+            var month = value + 1;
+            if (Month == month) return;
+            Month = month;
+            UpdateInputs();
         }
 
         private void Init()
@@ -87,16 +94,34 @@ namespace com.samwalz.unity_ui.date_picker
         {
             Init();
         }
-    
+
+        public void Apply()
+        {
+            if (_input == null) return;
+            _input.DateTime = _dateTime;
+            _input.DateTimeSet = true;
+            Close();
+        }
+        public void Cancel()
+        {
+            Close();
+        }
+        public void RemoveDate()
+        {
+            _input.DateTimeSet = false;
+            Close();
+        }
+        
+        
+        
         public void Attach(DatePickerButton input)
         {
             if (_input == input) return;
             if (_input != null) DetachInternal(_input, input == null);
             _input = input;
             if (input == null) return;
-            _dateTime = input.DateTime;
-            inputYear.text = _dateTime.Year.ToString("0000");
-            ddMonth.value = _dateTime.Month - 1;
+            _dateTime = input.DateTimeSet ? input.DateTime : DateTime.Now;
+            UpdateInputs();
             Show(input);
         }
     
@@ -104,7 +129,14 @@ namespace com.samwalz.unity_ui.date_picker
         {
             DetachInternal(input);
         }
-    
+
+        private void UpdateInputs()
+        {
+            _ignoreChanges = true;
+            inputYear.text = _dateTime.Year.ToString("0000");
+            ddMonth.value = _dateTime.Month - 1;
+            _ignoreChanges = false;
+        }
     
         private void DetachInternal(DatePickerButton input, bool hide = true)
         {
@@ -116,7 +148,12 @@ namespace com.samwalz.unity_ui.date_picker
             }
             if (hide) Hide();
         }
-        
+
+        private void Close()
+        {
+            if (_input != null) _input.Hide();
+            else Detach();
+        }
     
         private void Show(Component input)
         {
@@ -125,7 +162,7 @@ namespace com.samwalz.unity_ui.date_picker
             var rect = misc.RectTransformUtility.GetWorldRect(rt);
             _transform.position = new Vector3(rect.xMin, rect.yMin, 0);
             _transform.localScale = Vector3.one;
-            _transform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rt.sizeDelta.x);
+            // _transform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rt.sizeDelta.x);
         }
     
         private void Hide()
@@ -135,7 +172,7 @@ namespace com.samwalz.unity_ui.date_picker
 
         public void OnCancel(BaseEventData eventData)
         {
-            Detach();
+            Cancel();
         }
     }
 }

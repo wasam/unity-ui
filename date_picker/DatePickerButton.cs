@@ -16,16 +16,33 @@ namespace com.samwalz.unity_ui.date_picker
         private bool _initialised;
 
         private DateTime _dateTime;
+        private bool _dateTimeSet;
         public DateTime DateTime
         {
             get => _dateTime;
             set
             {
                 _dateTime = value;
-                _buttonLabel.text = _dateTime.ToString("y", DateTimeFormatInfo.InvariantInfo);
+                UpdateButton();
             }
         }
-        
+
+        public bool DateTimeSet
+        {
+            get => _dateTimeSet;
+            set
+            {
+                _dateTimeSet = value;
+                UpdateButton();
+            }
+            
+        }
+
+        private void UpdateButton()
+        {
+            _buttonLabel.text = _dateTimeSet ? _dateTime.ToString("y", DateTimeFormatInfo.InvariantInfo) : "- not set -";
+        }
+
         private void Init()
         {
             if (_initialised) return;
