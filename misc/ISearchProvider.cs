@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace com.samwalz.unity_ui.auto_complete
+namespace com.samwalz.unity_ui.misc
 {
-    public interface IAutoCompleteSearch
+    public interface ISearchProvider
     {
         /// <summary>
         /// Searches for items that match a given search term

@@ -9,22 +9,43 @@ namespace com.samwalz.unity_ui.misc
 {
     public abstract class AbstractModalWindow : MonoBehaviour
     {
+        private static readonly Stack<AbstractModalWindow> OpenModalWindows = new Stack<AbstractModalWindow>();
+        private const int SortingOrderStep = 10000;
+        
         private GameObject _windowGameObject;
         private GameObject _clickBlocker;
-
         private Canvas _rootCanvas;
+        private Canvas _popupCanvas;
 
-        public virtual void Show(GameObject windowGameObject)
+        
+
+        public virtual void Show(GameObject windowGameObject = null)
         {
-            _windowGameObject = windowGameObject;
+            if (_clickBlocker != null)
+            {
+                Debug.LogWarning("modal already open");
+                return;
+            }
+            
+            _windowGameObject = windowGameObject != null ? windowGameObject : gameObject;
             if (_windowGameObject == null) return;
-            // GetOrAddComponent<Canvas>(_windowGameObject);
-            var popupCanvas = GetOrAddComponent<Canvas>(_windowGameObject);
-            popupCanvas.overrideSorting = true;
-            popupCanvas.sortingOrder = 20000;
-            TakeCareOfRaycaster(_windowGameObject, GetParentCanvas(_windowGameObject.transform.parent));
             if (_rootCanvas == null) _rootCanvas = GetRootCanvas(gameObject);
+            _popupCanvas = GetOrAddComponent<Canvas>(_windowGameObject);
+            _popupCanvas.gameObject.SetActive(true);
+            _popupCanvas.overrideSorting = true;
+            
+            // higher than previous modal window
+            var previousSortingOrder =
+                OpenModalWindows.Count == 0 ? 0 : OpenModalWindows.Peek()._popupCanvas.sortingOrder;
+            _popupCanvas.sortingOrder = previousSortingOrder + SortingOrderStep;
+            TakeCareOfRaycaster(_windowGameObject, GetParentCanvas(_windowGameObject.transform.parent));
+            
             _clickBlocker = CreateClickBlock(_rootCanvas);
+
+            _popupCanvas.overrideSorting = true;
+            
+            // store that open
+            OpenModalWindows.Push(this);
         }
 
         public virtual void Hide()
@@ -34,7 +55,19 @@ namespace com.samwalz.unity_ui.misc
                 Destroy(_clickBlocker);
                 _clickBlocker = null;
             }
+
+            if (OpenModalWindows.Count == 0) return;
+            if (OpenModalWindows.Peek() == this)
+            {
+                OpenModalWindows.Pop();
+            }
+            else
+            {
+                Debug.LogError("hiding modal window that is not on top!");
+            }
         }
+
+        protected abstract void OnBlockerClick();
 
         
         private GameObject CreateClickBlock(Canvas rootCanvas)
@@ -51,9 +84,8 @@ namespace com.samwalz.unity_ui.misc
             // Make blocker be in separate canvas in same layer as dropdown and in layer just below it.
             var blockerCanvas = blocker.AddComponent<Canvas>();
             blockerCanvas.overrideSorting = true;
-            var dropdownCanvas = _windowGameObject.GetComponent<Canvas>();
-            blockerCanvas.sortingLayerID = dropdownCanvas.sortingLayerID;
-            blockerCanvas.sortingOrder = dropdownCanvas.sortingOrder - 1;
+            blockerCanvas.sortingLayerID = _popupCanvas.sortingLayerID;
+            blockerCanvas.sortingOrder = _popupCanvas.sortingOrder - 1;
 
             
             TakeCareOfRaycaster(blocker, GetParentCanvas(transform.parent));
@@ -65,9 +97,15 @@ namespace com.samwalz.unity_ui.misc
 
             // Add button since it's needed to block, and to close the dropdown when blocking area is clicked.
             var blockerButton = blocker.AddComponent<Button>();
-            blockerButton.onClick.AddListener(Hide);
+            blockerButton.onClick.AddListener(OnBlockerButtonClick);
 
             return blocker;
+        }
+
+        private void OnBlockerButtonClick()
+        {
+            Hide();
+            OnBlockerClick();
         }
 
         private static void TakeCareOfRaycaster(GameObject go, Canvas parentCanvas)

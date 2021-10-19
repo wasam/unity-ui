@@ -1,13 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using com.samwalz.unity_ui.misc;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace com.samwalz.unity_ui.date_picker
 {
-    public class DatePickerWindow : MonoBehaviour, ICancelHandler
+    public class DatePickerWindow : AbstractModalWindow, ICancelHandler
     {
         public TMP_InputField inputYear;
         public TMP_Dropdown ddMonth;
@@ -151,12 +152,12 @@ namespace com.samwalz.unity_ui.date_picker
 
         private void Close()
         {
-            if (_input != null) _input.Hide();
-            else Detach();
+            Detach();
         }
     
         private void Show(Component input)
         {
+            base.Show();
             gameObject.SetActive(true);
             var rt = input.gameObject.transform as RectTransform;
             var rect = misc.RectTransformUtility.GetWorldRect(rt);
@@ -164,10 +165,16 @@ namespace com.samwalz.unity_ui.date_picker
             _transform.localScale = Vector3.one;
             // _transform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rt.sizeDelta.x);
         }
-    
-        private void Hide()
+
+        public override void Hide()
         {
+            base.Hide();
             gameObject.SetActive(false);
+        }
+
+        protected override void OnBlockerClick()
+        {
+            Detach();
         }
 
         public void OnCancel(BaseEventData eventData)

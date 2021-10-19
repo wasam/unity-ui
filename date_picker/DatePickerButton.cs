@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace com.samwalz.unity_ui.date_picker
 {
     [RequireComponent(typeof(Button))]
-    public class DatePickerButton : AbstractModalWindow
+    public class DatePickerButton : MonoBehaviour
     {
         private Button _button;
         private TextMeshProUGUI _buttonLabel;
@@ -63,13 +63,9 @@ namespace com.samwalz.unity_ui.date_picker
         private void OnClick()
         {
             DatePickerWindow.Instance.Attach(this);
-            Show(DatePickerWindow.Instance.gameObject);
         }
 
-        public override void Hide()
-        {
-            base.Hide();
-            DatePickerWindow.Instance.Detach();
-        }
+        
+
     }
 }
