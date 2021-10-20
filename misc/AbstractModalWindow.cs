@@ -9,6 +9,8 @@ namespace com.samwalz.unity_ui.misc
 {
     public abstract class AbstractModalWindow : MonoBehaviour
     {
+        protected Color BlockerColor = Color.clear;
+        
         private static readonly Stack<AbstractModalWindow> OpenModalWindows = new Stack<AbstractModalWindow>();
         private const int SortingOrderStep = 10000;
         
@@ -16,7 +18,7 @@ namespace com.samwalz.unity_ui.misc
         private GameObject _clickBlocker;
         private Canvas _rootCanvas;
         private Canvas _popupCanvas;
-
+        
         
 
         public virtual void Show(GameObject windowGameObject = null)
@@ -93,7 +95,7 @@ namespace com.samwalz.unity_ui.misc
 
             // Add image since it's needed to block, but make it clear.
             var blockerImage = blocker.AddComponent<Image>();
-            blockerImage.color = Color.clear;
+            blockerImage.color = BlockerColor;
 
             // Add button since it's needed to block, and to close the dropdown when blocking area is clicked.
             var blockerButton = blocker.AddComponent<Button>();
@@ -113,7 +115,7 @@ namespace com.samwalz.unity_ui.misc
             if (parentCanvas != null)
             {
                 var components = parentCanvas.GetComponents<BaseRaycaster>();
-                for (int i = 0; i < components.Length; i++)
+                for (var i = 0; i < components.Length; i++)
                 {
                     var raycasterType = components[i].GetType();
                     GetOrAddComponent(go, raycasterType);
