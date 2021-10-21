@@ -77,7 +77,10 @@ namespace com.samwalz.unity_ui.auto_complete
             GetCaretArea(_input, _autocompleteInput.separator, out var start, out var end, out var length);
             var text = _input.text;
             Debug.Log(start + " " + end + " " + length);
-            var newText = text.Substring(0, start + 1) + " " + choiceText + (end > start ? text.Substring(end) : "");
+            var newText = 
+                (start > 0 ? text.Substring(0, start) + " " : "") + 
+                choiceText + 
+                (end < text.Length ? text.Substring(end) : "");
             _input.text = newText;
             OnChoice?.Invoke(text);
         }
@@ -97,25 +100,44 @@ namespace com.samwalz.unity_ui.auto_complete
         private void OnTextChange(string text)
         {
             GetCaretArea(_input, _autocompleteInput.separator, out var start, out var end, out var length);
-            if (length < 0) return;
-            var segment = text.Substring(start, length).Trim();
-            var results = new List<string>();
-            _searchProvider.Search(segment, ref results, maxResults);
+            var results = ObjectPool<List<string>>.Get();
+            if (length <= 0) results.Clear();
+            else
+            {
+                var searchTerm = text.Substring(start, length).Trim();
+                _searchProvider.Search(searchTerm, ref results, maxResults);
+                Debug.Log("'" + searchTerm + "'");
+            }
             UpdateChoiceButtons(results);
+            ObjectPool<List<string>>.Return(results);
         }
 
         private static void GetCaretArea(TMP_InputField input, char separator, out int start, out int end, out int length)
         {
             var text = input.text;
+            if (separator == '\0' || text.Length == 0)
+            {
+                start = 0;
+                end = text.Length - 1;
+                length = text.Length;
+                return;
+            }
             var caretPos = input.caretPosition;
             var maxPos = text.Length;
-            start = text.LastIndexOf(separator, caretPos - 1);
-            end =  caretPos < maxPos ? text.IndexOf(separator, caretPos - 1) : -1;
-            if (start == -1) start = 0;
-            if (end == -1) end = text.Length - 1;
-            else end -= 1;
+            
+            start = caretPos > 0 ? text.LastIndexOf(separator, caretPos - 1) : -1;
+            var startFound = start != -1;
+            end = caretPos < maxPos ? text.IndexOf(separator, caretPos) : -1;
+            var endFound = end != -1;
+            Debug.Log(start + " <> " + end);
+            
+            if (!endFound) end = maxPos;
+            start += 1;
+            // if (!startFound) start = 0;
+            Debug.Log(start + " <=> " + end);
+            
             length = end - start;
-            if (start > 0 && length > 0) start += 1;
+            // if (startFound) start += 1;
         }
 
         private void UpdateChoiceButtons(List<string> choices)
