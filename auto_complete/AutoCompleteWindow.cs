@@ -10,7 +10,9 @@ namespace com.samwalz.unity_ui.auto_complete
     public class AutoCompleteWindow : AbstractModalWindow, ICancelHandler
     {
         public delegate void ChoiceHandler(string choice);
+        public delegate void DetachHandler(AutocompleteInputField autocompleteInputField);
         public event ChoiceHandler OnChoice;
+        public event DetachHandler OnDetach;
         
         public int maxResults = 7;
         public AutoCompleteButton choicePrefab;
@@ -19,6 +21,8 @@ namespace com.samwalz.unity_ui.auto_complete
         private RectTransform _transform;
         private ISearchProvider _searchProvider;
         private AutocompleteInputField _autocompleteInput;
+
+        private CanvasGroup _canvasGroup;
         
         private static AutoCompleteWindow _instance;
         private bool _initialised;
@@ -39,6 +43,7 @@ namespace com.samwalz.unity_ui.auto_complete
             if (_initialised) return;
 
             _transform = transform as RectTransform;
+            _canvasGroup = GetOrAddComponent<CanvasGroup>(gameObject);
             Hide();
             
             _instance = this;
@@ -74,15 +79,23 @@ namespace com.samwalz.unity_ui.auto_complete
         }
         public void ButtonChoice(string choiceText)
         {
-            GetCaretArea(_input, _autocompleteInput.separator, out var start, out var end, out var length);
-            var text = _input.text;
-            Debug.Log(start + " " + end + " " + length);
-            var newText = 
-                (start > 0 ? text.Substring(0, start) + " " : "") + 
-                choiceText + 
-                (end < text.Length ? text.Substring(end) : "");
+            var newText = choiceText;
+            if (_autocompleteInput.separator != '\0')
+            {
+                GetCaretArea(_input, _autocompleteInput.separator, out var start, out var end, out var length);
+                var text = _input.text;
+                // insert new text
+                newText = 
+                    (start > 0 ? text.Substring(0, start) + " " : "") + 
+                    choiceText + 
+                    (end < text.Length ? text.Substring(end) : "");
+                // cleanup a bit
+                var parts = newText.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                newText = string.Join(", ", parts);
+                _input.text = newText;    
+            }
             _input.text = newText;
-            OnChoice?.Invoke(text);
+            OnChoice?.Invoke(newText);
         }
         private void DetachInternal(TMP_InputField input, bool hide = true)
         {
@@ -90,6 +103,11 @@ namespace com.samwalz.unity_ui.auto_complete
             if (input != _input) return;
             if (_input != null)
             {
+                if (_autocompleteInput != null)
+                {
+                    OnDetach?.Invoke(_autocompleteInput);
+                    _autocompleteInput = null;
+                }
                 _input.onValueChanged.RemoveListener(OnTextChange);
                 _input = null;
             }
@@ -101,11 +119,23 @@ namespace com.samwalz.unity_ui.auto_complete
         {
             GetCaretArea(_input, _autocompleteInput.separator, out var start, out var end, out var length);
             var results = ObjectPool<List<string>>.Get();
-            if (length <= 0) results.Clear();
+            if (length <= 0)
+            {
+                HideCanvas();
+                results.Clear();
+            }
             else
             {
                 var searchTerm = text.Substring(start, length).Trim();
-                _searchProvider.Search(searchTerm, ref results, maxResults);
+                if (searchTerm.Length < _autocompleteInput.minChars)
+                {
+                    HideCanvas();
+                }
+                else
+                {
+                    ShowCanvas();
+                    _searchProvider.Search(searchTerm, ref results, maxResults);
+                }
                 Debug.Log("'" + searchTerm + "'");
             }
             UpdateChoiceButtons(results);
@@ -129,15 +159,11 @@ namespace com.samwalz.unity_ui.auto_complete
             var startFound = start != -1;
             end = caretPos < maxPos ? text.IndexOf(separator, caretPos) : -1;
             var endFound = end != -1;
-            Debug.Log(start + " <> " + end);
             
             if (!endFound) end = maxPos;
             start += 1;
-            // if (!startFound) start = 0;
-            Debug.Log(start + " <=> " + end);
             
             length = end - start;
-            // if (startFound) start += 1;
         }
 
         private void UpdateChoiceButtons(List<string> choices)
@@ -162,7 +188,7 @@ namespace com.samwalz.unity_ui.auto_complete
         private void Show(Component input)
         {
             base.Show();
-            gameObject.SetActive(true);
+            ShowCanvas();
             var rt = input.gameObject.transform as RectTransform;
             var rect = misc.RectTransformUtility.GetWorldRect(rt);
             _transform.position = new Vector3(rect.xMin, rect.yMin, 0);
@@ -174,7 +200,19 @@ namespace com.samwalz.unity_ui.auto_complete
         public override void Hide()
         {
             base.Hide();
-            gameObject.SetActive(false);
+            HideCanvas();
+        }
+
+        private void ShowCanvas()
+        {
+            _canvasGroup.blocksRaycasts = true;
+            _canvasGroup.alpha = 1f;
+        }
+
+        private void HideCanvas()
+        {
+            _canvasGroup.blocksRaycasts = false;
+            _canvasGroup.alpha = 0f;
         }
 
         protected override void OnBlockerClick()

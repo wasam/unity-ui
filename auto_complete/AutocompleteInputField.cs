@@ -33,13 +33,18 @@ namespace com.samwalz.unity_ui.auto_complete
             _autoCompleteWindow = AutoCompleteWindow.Instance;
             _input = GetComponent<TMP_InputField>();
             _input.onValueChanged.AddListener(OnTextChange);
+            _input.onSelect.AddListener(OnInputSelect);
             _initialised = true;
         }
         private void Start()
         {
             Init();
         }
-        
+
+        private void OnInputSelect(string text)
+        {
+            CheckAttachDetach();
+        }
         private void OnTextChange(string text)
         {
             CheckAttachDetach();
@@ -47,23 +52,24 @@ namespace com.samwalz.unity_ui.auto_complete
         private void CheckAttachDetach()
         {
             if (!_input.isFocused) return;
-            if (_input.text.Trim().Length >= minChars &&
-                showAutoComplete)
-            {
-                Attach();
-            }
-            else
-            {
-                Detach();
-            }
-            
+            if (showAutoComplete) Attach();
         }
 
         private void Attach()
         {
+            if (_autoCompleteWindowAttached) return;
             _autoCompleteWindow.Attach(this, _input, SearchProvider);
             _autoCompleteWindow.OnChoice += AutoCompleteWindowOnOnChoice;
+            _autoCompleteWindow.OnDetach += AutoCompleteWindowOnOnDetach;
             _autoCompleteWindowAttached = true;
+        }
+
+        private void AutoCompleteWindowOnOnDetach(AutocompleteInputField autocompleteinputfield)
+        {
+            if (this == autocompleteinputfield)
+            {
+                DetachCleanup();
+            }
         }
 
         private void AutoCompleteWindowOnOnChoice(string choice)
@@ -74,8 +80,15 @@ namespace com.samwalz.unity_ui.auto_complete
 
         private void Detach()
         {
+            if (!_autoCompleteWindowAttached) return;
             _autoCompleteWindow.Detach();
+            DetachCleanup();
+        }
+
+        private void DetachCleanup()
+        {
             _autoCompleteWindow.OnChoice -= AutoCompleteWindowOnOnChoice;
+            _autoCompleteWindow.OnDetach -= AutoCompleteWindowOnOnDetach;
             _autoCompleteWindowAttached = false;
         }
     }
