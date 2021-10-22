@@ -32,7 +32,7 @@ namespace com.samwalz.unity_ui.auto_complete
             get
             {
                 if (_instance != null) return _instance;
-                _instance = FindObjectOfType<AutoCompleteWindow>();
+                _instance = FindObjectOfType<AutoCompleteWindow>(true);
                 _instance.Init();
                 return _instance;
             }

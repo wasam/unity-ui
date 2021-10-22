@@ -31,7 +31,7 @@ namespace com.samwalz.unity_ui.date_picker
             get
             {
                 if (_instance != null) return _instance;
-                _instance = FindObjectOfType<DatePickerWindow>();
+                _instance = FindObjectOfType<DatePickerWindow>(true);
                 _instance.Init();
                 return _instance;
             }
