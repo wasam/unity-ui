@@ -136,7 +136,7 @@ namespace com.samwalz.unity_ui.auto_complete
                     ShowCanvas();
                     _searchProvider.Search(searchTerm, ref results, maxResults);
                 }
-                Debug.Log("'" + searchTerm + "'");
+                // Debug.Log("'" + searchTerm + "'");
             }
             UpdateChoiceButtons(results);
             ObjectPool<List<string>>.Return(results);
