@@ -3,17 +3,20 @@ using UnityEngine;
 
 namespace com.samwalz.unity_ui.misc
 {
+    public static class ListPool<T>
+    {
+        public static List<T> Get() => ObjectPool<List<T>>.Get();
+        public static void Return(List<T> list)
+        {
+            list.Clear();
+            ObjectPool<List<T>>.Return(list);
+        }
+    }
     public static class ObjectPool<T> where T : new()
     {
         private static readonly Queue<T> AvailableItems = new Queue<T>();
-        public static T Get()
-        {
-            return AvailableItems.Count != 0 ? AvailableItems.Dequeue() : new T();
-        }
-        public static void Return(T item)
-        {
-            AvailableItems.Enqueue(item);
-        }
+        public static T Get() => AvailableItems.Count != 0 ? AvailableItems.Dequeue() : new T();
+        public static void Return(T item) => AvailableItems.Enqueue(item);
     }
     public static class ObjectPool {
         private const HideFlags PoolVisibility = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
