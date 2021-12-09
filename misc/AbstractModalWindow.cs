@@ -155,10 +155,10 @@ namespace com.samwalz.unity_ui.misc
         }
         private static Canvas GetRootCanvas(GameObject go)
         {
-            var candidates = ObjectPool<List<Canvas>>.Get();
+            var candidates = ListPool<Canvas>.Get();
             go.GetComponentsInParent(true, candidates);
             var rootCanvas = candidates.FirstOrDefault(t => t.isRootCanvas);
-            ObjectPool<List<Canvas>>.Return(candidates);
+            ListPool<Canvas>.Return(candidates);
             return rootCanvas;
         }
     }

@@ -118,7 +118,7 @@ namespace com.samwalz.unity_ui.auto_complete
         private void OnTextChange(string text)
         {
             GetCaretArea(_input, _autocompleteInput.separator, out var start, out var end, out var length);
-            var results = ObjectPool<List<string>>.Get();
+            var results = ListPool<string>.Get();
             if (length <= 0)
             {
                 HideCanvas();
@@ -139,7 +139,7 @@ namespace com.samwalz.unity_ui.auto_complete
                 // Debug.Log("'" + searchTerm + "'");
             }
             UpdateChoiceButtons(results);
-            ObjectPool<List<string>>.Return(results);
+            ListPool<string>.Return(results);
         }
 
         private static void GetCaretArea(TMP_InputField input, char separator, out int start, out int end, out int length)
