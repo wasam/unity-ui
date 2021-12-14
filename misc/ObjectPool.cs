@@ -130,7 +130,7 @@ namespace com.samwalz.unity_ui.misc
                 gameObject.transform.SetParent(parent);
                 gameObject.transform.position = position;
                 gameObject.transform.rotation = rotation;
-                if (SamWalz.Unity.ObjectPool.debug)
+                if (Debug)
                 {
                     UnityEngine.Debug.Log("instantiate at " + position);
                 }

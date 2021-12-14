@@ -166,13 +166,13 @@ namespace com.samwalz.unity_ui.auto_complete
             length = end - start;
         }
 
-        private void UpdateChoiceButtons(List<string> choices)
+        private void UpdateChoiceButtons(IReadOnlyList<string> choices)
         {
             var childCount = transform.childCount;
             for (var i = 0; i < childCount; i++)
             {
                 var c = transform.GetChild(0);
-                misc.ObjectPool.Recycle(c.gameObject);
+                ObjectPool.Recycle(c.gameObject);
             }
             for (var i = 0; i < choices.Count; i++)
             {
